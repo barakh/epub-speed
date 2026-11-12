@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+
+# local shelf + reading state (uploads, progress, extra paths)
+data/books/*
+!data/books/.gitkeep
+data/progress/*
+!data/progress/.gitkeep
+data/sources.json
+
+# generated test book
+data/books/sample-book.epub

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d0f12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>epub-speed</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ── library ─────────────────────────────────────────────── -->
+<section id="library" class="screen">
+  <header class="lib-head">
+    <div>
+      <h1>epub-speed</h1>
+      <p class="tagline">one book, faster</p>
+    </div>
+    <label class="add" title="Add an EPUB">
+      +
+      <input id="upload" type="file" accept=".epub,application/epub+zip" hidden>
+    </label>
+  </header>
+  <div id="books" class="books"></div>
+  <p id="empty" class="empty hidden">
+    No books yet. Drop <code>.epub</code> files into
+    <code>epub-speed/data/books/</code> and reload.
+  </p>
+</section>
+
+<!-- ── reader ──────────────────────────────────────────────── -->
+<section id="reader" class="screen hidden">
+  <header id="topbar">
+    <button id="btn-back" class="icon" aria-label="Library">←</button>
+    <div class="titles">
+      <div id="book-title"></div>
+      <div id="chapter-title"></div>
+    </div>
+    <button id="btn-toc" class="icon" aria-label="Chapters">☰</button>
+  </header>
+
+  <main id="stage">
+    <div id="rsvp">
+      <div class="guide"></div>
+      <div id="rsvp-line"><span class="l"></span><span class="p"></span><span class="r"></span></div>
+    </div>
+    <div id="textview" class="hidden"></div>
+    <div id="tap-hint" class="hidden">tap to start</div>
+  </main>
+
+  <footer id="controls">
+    <div class="row modes">
+      <button class="mode on" data-mode="rsvp">RSVP</button>
+      <button class="mode" data-mode="pacer">Pacer</button>
+      <button class="mode" data-mode="plain">Plain</button>
+      <span class="spacer"></span>
+      <button id="btn-font-dn" class="tiny" aria-label="Smaller text">A−</button>
+      <button id="btn-font-up" class="tiny" aria-label="Larger text">A+</button>
+    </div>
+    <div class="row transport">
+      <button id="btn-prev" class="icon" aria-label="Previous sentence">⇤</button>
+      <button id="btn-play" class="play" aria-label="Play">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path class="icon-play" d="M8 5.2v13.6L19 12z"/>
+          <g class="icon-pause"><rect x="7" y="5" width="3.6" height="14" rx="1"/><rect x="13.4" y="5" width="3.6" height="14" rx="1"/></g>
+        </svg>
+      </button>
+      <button id="btn-next" class="icon" aria-label="Next sentence">⇥</button>
+      <div class="wpm">
+        <button id="wpm-dn" class="tiny" aria-label="Slower">−</button>
+        <span id="wpm-val">300</span>
+        <button id="wpm-up" class="tiny" aria-label="Faster">+</button>
+      </div>
+      <button id="btn-chunk" class="toggle" title="Two words per flash">2×</button>
+    </div>
+    <div class="bar"><div id="progress-fill"></div></div>
+    <div class="row meta">
+      <span id="pos"></span>
+      <span id="stats"></span>
+    </div>
+  </footer>
+
+  <div id="toc" class="panel hidden">
+    <header><h2>Chapters</h2><button id="toc-close" class="icon">×</button></header>
+    <ul id="toc-list"></ul>
+  </div>
+
+  <div id="help" class="panel hidden">
+    <header><h2>Keys</h2><button id="help-close" class="icon">×</button></header>
+    <dl>
+      <dt>space</dt><dd>play / pause</dd>
+      <dt>← →</dt><dd>previous / next sentence</dd>
+      <dt>↑ ↓</dt><dd>faster / slower</dd>
+      <dt>1 2 3</dt><dd>RSVP / Pacer / Plain</dd>
+      <dt>c</dt><dd>chapter list</dd>
+      <dt>esc</dt><dd>library</dd>
+    </dl>
+  </div>
+</section>
+
+<div id="endnote" class="hidden"></div>
+<span id="measure" aria-hidden="true"></span>
+<script src="/static/app.js"></script>
+</body>
+</html>
