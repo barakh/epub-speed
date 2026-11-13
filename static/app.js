@@ -609,9 +609,37 @@ function wire() {
   let pressedWhilePlaying = false;
   const HOLD_MS = 220;
 
+  // Plain mode: long-press a word to pick up the paced page at that word.
+  const PICK_MS = 420;
+  let pickTimer = null;
+  let pickAt = { x: 0, y: 0 };
+
+  const cancelPick = () => {
+    if (pickTimer) clearTimeout(pickTimer);
+    pickTimer = null;
+  };
+
   const stage = $('#stage');
   stage.addEventListener('pointerdown', (e) => {
-    if (S.mode === 'plain') return;
+    if (S.mode === 'plain') {
+      const word = e.target.closest('.w');
+      if (!word) return;
+      cancelPick();
+      pickAt = { x: e.clientX, y: e.clientY };
+      const index = Number(word.dataset.i);
+      pickTimer = setTimeout(() => {
+        pickTimer = null;
+        S.mode = 'pacer';
+        S.starting = false;
+        $('#tap-hint').classList.add('hidden');
+        applyMode();
+        setPos(index);
+        updateMeta();
+        saveProgress();
+        toast('Pacer picks up here');
+      }, PICK_MS);
+      return;
+    }
     if (e.target.closest('.w') && S.mode === 'pacer') return;
     pressAt = performance.now();
     pressedWhilePlaying = S.playing;
@@ -619,7 +647,13 @@ function wire() {
     try { stage.setPointerCapture(e.pointerId); } catch (err) {}
   });
 
+  stage.addEventListener('pointermove', (e) => {
+    if (!pickTimer) return;
+    if (Math.hypot(e.clientX - pickAt.x, e.clientY - pickAt.y) > 12) cancelPick();
+  });
+
   const release = (e) => {
+    cancelPick();
     if (!pressAt) return;
     const held = performance.now() - pressAt;
     const wasPlaying = pressedWhilePlaying;

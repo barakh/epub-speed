@@ -54,6 +54,9 @@ anywhere on the words to freeze the flow — it resumes where it stopped as
 soon as you lift your finger. `⇤ ⇥` jump by sentence, `−/+` change speed,
 `A−/A+` change type size.
 
+In **Plain** mode, press and hold a word to hand that exact spot to the
+Pacer: it switches mode, jumps there and dims everything before it.
+
 ## Timing model
 
 At *n* wpm every word gets `60000 / n` ms, then:
