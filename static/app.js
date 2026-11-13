@@ -140,7 +140,7 @@ async function loadChapter(number, idx = 0, autoplay = false) {
   $('#endnote').classList.add('hidden');
   markToc();
 
-  if (S.mode === 'rsvp') renderRsvp();
+  if (S.mode === 'rsvp') { flowReset(); renderRsvp(true); }
   else {
     buildText();
     if (S.mode === 'pacer') { S.hi = -1; paint(S.idx); dimBefore(S.idx); }
@@ -199,34 +199,90 @@ function measureWidth(text) {
   return m.getBoundingClientRect().width;
 }
 
-function renderRsvp() {
-  const word = S.words[S.idx];
-  const line = $('#rsvp-line');
-  if (!word) { line.style.opacity = '0'; return; }
-  line.style.opacity = '1';
+const FLOW = new Map();   // word index -> row element
+const FLOW_AHEAD = 3;     // words queued below the reading line
+const FLOW_BEHIND = 3;    // words already read, rising and fading
 
-  const text = chunkText(S.idx);
-  let p = orp(text);
-  if (p >= text.length) p = Math.max(0, text.length - 1);
+function flowReset() {
+  for (const row of FLOW.values()) row.remove();
+  FLOW.clear();
+}
 
-  const left = text.slice(0, p);
-  const pivot = text[p] || '';
-  const right = text.slice(p + 1);
+function flowRowHeight() {
+  const size = parseFloat(getComputedStyle($('#measure')).fontSize);
+  return (Number.isFinite(size) ? size : 40) * 1.25;
+}
 
-  line.children[0].textContent = left;
-  line.children[1].textContent = pivot;
-  line.children[2].textContent = right;
-  line.style.fontWeight = word.f & 1 ? '700' : '400';
-  line.style.fontStyle = word.f & 2 ? 'italic' : 'normal';
-  line.style.opacity = word.f & 4 ? '.55' : '1';
+function makeRow(i) {
+  const word = S.words[i];
+  const text = word.t;
+  let pivotAt = orp(text);
+  if (pivotAt >= text.length) pivotAt = Math.max(0, text.length - 1);
 
-  const m = $('#measure');
-  m.style.fontWeight = line.style.fontWeight;
-  m.style.fontStyle = line.style.fontStyle;
-  const pivotLeft = measureWidth(left);
-  const pivotRight = measureWidth(left + pivot);
-  const shift = (pivotLeft + pivotRight) / 2;
-  line.style.transform = `translate(${-shift}px, -50%)`;
+  const row = document.createElement('div');
+  row.className = 'frow';
+  row.dataset.i = String(i);
+  if (word.f & 1) row.style.fontWeight = '700';
+  if (word.f & 2) row.style.fontStyle = 'italic';
+
+  const line = document.createElement('span');
+  line.className = 'fline';
+  const left = document.createElement('span');
+  const pivot = document.createElement('span');
+  const right = document.createElement('span');
+  left.textContent = text.slice(0, pivotAt);
+  pivot.className = 'p';
+  pivot.textContent = text[pivotAt] || '';
+  right.textContent = text.slice(pivotAt + 1);
+  line.append(left, pivot, right);
+  row.append(line);
+
+  // Pin this word's pivot to the centre line.
+  const measure = $('#measure');
+  measure.style.fontWeight = row.style.fontWeight;
+  measure.style.fontStyle = row.style.fontStyle;
+  const toPivot = measureWidth(left.textContent + pivot.textContent);
+  const upToPivot = measureWidth(left.textContent);
+  line.style.transform = `translateX(${-((toPivot + upToPivot) / 2)}px)`;
+  return row;
+}
+
+function renderRsvp(instant) {
+  const total = S.words.length;
+  if (!total) return;
+  const cur = S.idx;
+  const lo = Math.max(0, cur - FLOW_BEHIND);
+  const hi = Math.min(total - 1, cur + FLOW_AHEAD);
+  const rowH = flowRowHeight();
+  const track = $('#rsvp-flow');
+
+  for (const [i, row] of FLOW) {
+    if (i < lo - 1 || i > hi + 1) { row.remove(); FLOW.delete(i); }
+  }
+  for (let i = lo; i <= hi; i++) {
+    if (FLOW.has(i)) continue;
+    const row = makeRow(i);
+    track.append(row);
+    FLOW.set(i, row);
+  }
+
+  if (instant) {
+    track.style.setProperty('--flow-dur', '0ms');
+  } else {
+    const dur = Math.max(35, Math.min(110, delayFor(cur) * 0.6));
+    track.style.setProperty('--flow-dur', Math.round(dur) + 'ms');
+  }
+
+  const room = track.clientWidth * 0.84;
+  for (const [i, row] of FLOW) {
+    const dy = (i - cur) * rowH - rowH / 2;
+    // Long words shrink around their pivot instead of running off the screen.
+    const width = row.firstChild ? row.firstChild.offsetWidth : 0;
+    const k = width > room ? room / width : 1;
+    row.style.transformOrigin = '0 50%';
+    row.style.transform = `translateY(${dy.toFixed(2)}px) scale(${k.toFixed(3)})`;
+    row.dataset.state = i === cur ? 'cur' : i < cur ? 'past' : 'next';
+  }
 }
 
 /* ── paced / plain page ────────────────────────────────── */
@@ -349,7 +405,7 @@ async function finishChapter() {
     await loadChapter(next, 0, true);
   } else {
     toast('End of book · ☰ for chapters');
-    renderRsvp();
+    renderRsvp(true);
     updateMeta();
   }
 }
@@ -359,14 +415,14 @@ function setPlayIcon(on) {
   $('#btn-play').setAttribute('aria-label', on ? 'Pause' : 'Play');
 }
 
-function play() {
+function play(resetRamp = true) {
   if (S.playing) return;
   if (S.starting) {
     S.starting = false;
     $('#tap-hint').classList.add('hidden');
   }
   S.playing = true;
-  S.rampCount = 0;
+  if (resetRamp) S.rampCount = 0;
   setPlayIcon(true);
   schedule();
 }
@@ -397,7 +453,7 @@ function setPos(i) {
   S.idx = Math.min(Math.max(0, i), S.words.length - 1);
   S.hi = -1;
   $('#textview').querySelectorAll('.w.done,.w.cur').forEach((n) => n.classList.remove('done', 'cur'));
-  if (S.mode === 'rsvp') renderRsvp();
+  if (S.mode === 'rsvp') renderRsvp(true);
   else { paint(S.idx); if (S.mode === 'pacer') dimBefore(S.idx); }
   updateMeta();
   saveProgress();
@@ -416,7 +472,6 @@ function applyMode() {
   $$('.mode').forEach((b) => b.classList.toggle('on', b.dataset.mode === S.mode));
   $('#rsvp').classList.toggle('hidden', S.mode !== 'rsvp');
   $('#textview').classList.toggle('hidden', S.mode === 'rsvp');
-  $('#btn-chunk').classList.toggle('hidden', S.mode !== 'rsvp');
   if (S.mode === 'plain' && S.playing) pause();
   if (!S.chapter) return;
   if (S.mode !== 'rsvp') {
@@ -427,7 +482,7 @@ function applyMode() {
     if (S.mode === 'pacer') dimBefore(S.idx);
     if (S.mode === 'plain') ensureVisible($('#textview').querySelector('.w.cur'));
   } else {
-    renderRsvp();
+    renderRsvp(true);
   }
 }
 
@@ -504,7 +559,8 @@ function setZoom(delta) {
   document.documentElement.style.setProperty('--rsvp-zoom', S.zoom);
   $('#textview').style.fontSize = (1.12 * S.zoom).toFixed(3) + 'rem';
   try { localStorage.setItem('epub-speed-zoom', String(S.zoom)); } catch (e) {}
-  if (S.mode === 'rsvp') renderRsvp();
+  flowReset();
+  if (S.mode === 'rsvp') renderRsvp(true);
 }
 
 function wire() {
@@ -539,12 +595,6 @@ function wire() {
   $('#wpm-up').addEventListener('click', () => { S.wpm = Math.min(900, S.wpm + 25); S.rampCount = 0; updateWpm(); updateMeta(); saveProgress(); });
   $('#wpm-dn').addEventListener('click', () => { S.wpm = Math.max(150, S.wpm - 25); S.rampCount = 0; updateWpm(); updateMeta(); saveProgress(); });
 
-  $('#btn-chunk').addEventListener('click', () => {
-    S.chunk = S.chunk === 2 ? 1 : 2;
-    $('#btn-chunk').classList.toggle('on', S.chunk === 2);
-    if (S.mode === 'rsvp') renderRsvp();
-  });
-
   $('#btn-font-up').addEventListener('click', () => setZoom(0.12));
   $('#btn-font-dn').addEventListener('click', () => setZoom(-0.12));
 
@@ -556,14 +606,41 @@ function wire() {
     saveProgress();
   }));
 
-  $('#stage').addEventListener('click', (e) => {
-    const word = e.target.closest('.w');
-    if (word && S.mode === 'pacer') {
-      setPos(Number(word.dataset.i));
-      return;
-    }
+  // Tap = toggle, press-and-hold = freeze while the finger is down.
+  let pressAt = 0;
+  let pressedWhilePlaying = false;
+  const HOLD_MS = 220;
+
+  const stage = $('#stage');
+  stage.addEventListener('pointerdown', (e) => {
     if (S.mode === 'plain') return;
-    toggle();
+    if (e.target.closest('.w') && S.mode === 'pacer') return;
+    pressAt = performance.now();
+    pressedWhilePlaying = S.playing;
+    if (S.playing) pause();
+    try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+
+  const release = (e) => {
+    if (!pressAt) return;
+    const held = performance.now() - pressAt;
+    const wasPlaying = pressedWhilePlaying;
+    pressAt = 0;
+    pressedWhilePlaying = false;
+    if (wasPlaying) {
+      if (held >= HOLD_MS) play(false);   // held: carry on where we stopped
+      return;                             // quick tap: stay paused
+    }
+    if (held < 600 && !e.target.closest('.w')) play();   // tap while paused
+  };
+  stage.addEventListener('pointerup', release);
+  stage.addEventListener('pointercancel', release);
+  stage.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  // A word in Pacer mode is a position, not a play button.
+  stage.addEventListener('click', (e) => {
+    const word = e.target.closest('.w');
+    if (word && S.mode === 'pacer') setPos(Number(word.dataset.i));
   });
 
   document.addEventListener('keydown', (e) => {
@@ -591,6 +668,11 @@ function wire() {
     if (document.hidden) sendProgress(true);
   });
   window.addEventListener('pagehide', () => sendProgress(true));
+  window.addEventListener('resize', () => {
+    if (S.mode !== 'rsvp' || !S.chapter) return;
+    flowReset();
+    renderRsvp(true);
+  });
 
   try {
     const z = parseFloat(localStorage.getItem('epub-speed-zoom'));

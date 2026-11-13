@@ -52,7 +52,6 @@ button.on { border-color: var(--accent); color: var(--accent); background: var(-
 
 .icon { width: 44px; height: 44px; font-size: 1.15rem; flex: none; }
 .tiny { min-width: 40px; height: 34px; font-size: .8rem; color: var(--ink-dim); }
-.toggle { height: 34px; padding: 0 10px; font-size: .75rem; letter-spacing: .04em; color: var(--ink-dim); }
 
 /* ── library ───────────────────────────────────────────── */
 
@@ -120,7 +119,12 @@ button.on { border-color: var(--accent); color: var(--accent); background: var(-
 #book-title { font-size: .78rem; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #chapter-title { font-size: .82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-#stage { flex: 1; position: relative; overflow: hidden; }
+#stage {
+  flex: 1; position: relative; overflow: hidden;
+  touch-action: manipulation;
+  user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
 
 /* ── RSVP ──────────────────────────────────────────────── */
 
@@ -130,22 +134,33 @@ button.on { border-color: var(--accent); color: var(--accent); background: var(-
   background: linear-gradient(transparent, var(--line) 15%, var(--line) 85%, transparent);
   transform: translateX(-.5px);
 }
-#rsvp-line {
+#rsvp-flow {
+  position: absolute; inset: 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 78%, transparent 100%);
+}
+.frow {
   position: absolute;
-  top: 50%;
   left: 50%;
-  white-space: nowrap;
+  top: 50%;
+  height: 1.25em;
+  line-height: 1.25em;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: calc(clamp(2.1rem, 11vw, 4.6rem) * var(--rsvp-zoom));
   font-weight: 400;
-  line-height: 1.1;
   letter-spacing: -0.015em;
-  transform: translate(-50%, -50%);
-  will-change: transform;
+  white-space: nowrap;
   font-variant-ligatures: none;
   font-kerning: none;
+  will-change: transform, opacity;
+  transition: transform var(--flow-dur, 90ms) linear, opacity 240ms ease;
 }
-#rsvp-line .p { color: var(--accent); }
+.frow .fline { position: absolute; left: 0; top: 0; white-space: nowrap; }
+.frow .p { color: var(--accent); }
+.frow[data-state="past"] { opacity: .11; }
+.frow[data-state="next"] { opacity: .22; }
+.frow[data-state="cur"] { opacity: 1; }
+
 #endnote {
   position: fixed; left: 50%; bottom: 22%; transform: translateX(-50%);
   z-index: 40; pointer-events: none; max-width: 82vw; text-align: center;

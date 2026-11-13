@@ -6,7 +6,7 @@ Three views of the same book, plus a position that is remembered:
 
 | view | what it does | good for |
 | --- | --- | --- |
-| **RSVP** | one word (or two) at a time, pivot letter pinned to the centre | fiction, narrative nonfiction |
+| **RSVP** | a column of words sliding upward, pivot letter pinned to the centre line, the next few words queued below | fiction, narrative nonfiction |
 | **Pacer** | the whole page, read text dimmed, current word highlighted | dense text, arguments, numbers |
 | **Plain** | ordinary page | checking that extraction did not mangle the book |
 
@@ -49,8 +49,10 @@ State lives in `data/`:
 | c | chapter list |
 | esc | back |
 
-On the phone: tap the page to start, tap again to pause. `⇤ ⇥` jump by
-sentence, `−/+` change speed, `A−/A+` change type size.
+On the phone: tap the page to start, tap again to pause. Press and **hold**
+anywhere on the words to freeze the flow — it resumes where it stopped as
+soon as you lift your finger. `⇤ ⇥` jump by sentence, `−/+` change speed,
+`A−/A+` change type size.
 
 ## Timing model
 
@@ -59,7 +61,10 @@ At *n* wpm every word gets `60000 / n` ms, then:
 - long words get up to +55 % (they take longer to recognise)
 - a comma/colon adds 35 %, a full stop 90 %, an em dash 45 %
 - the last word of a paragraph adds 40 %
-- a two-word chunk (`2×`) adds 50 %
+
+The slide itself takes `min(110, 0.6 × delay)` ms, so faster speeds tighten the
+motion instead of dropping frames. Jumps (sentence, chapter, mode change) are
+instant.
 
 `ramp` is not a button — the reader adds 10 wpm every 400 words while you
 play, up to 900. If that overshoots, arrow down; the value is saved.
