@@ -66,8 +66,8 @@ The slide itself takes `min(110, 0.6 × delay)` ms, so faster speeds tighten the
 motion instead of dropping frames. Jumps (sentence, chapter, mode change) are
 instant.
 
-`ramp` is not a button — the reader adds 10 wpm every 400 words while you
-play, up to 900. If that overshoots, arrow down; the value is saved.
+The speed only changes when you change it. `−/+` (or ↑ ↓) move it by 25 wpm
+and the value is saved per book, so tomorrow starts where today stopped.
 
 ## How extraction works
 

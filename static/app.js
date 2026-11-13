@@ -15,8 +15,6 @@ const S = {
   chunk: 1,
   playing: false,
   timer: null,
-  rampOn: true,
-  rampCount: 0,
   zoom: 1,
   textBuiltFor: -1,
   hi: -1,
@@ -386,14 +384,6 @@ function schedule() {
 
 function tick() {
   if (!S.playing) return;
-  if (S.rampOn) {
-    S.rampCount += step();
-    if (S.rampCount >= 400 && S.wpm < 900) {
-      S.rampCount -= 400;
-      S.wpm += 10;
-      updateWpm();
-    }
-  }
   S.idx += step();
   if (S.idx >= S.words.length) {
     S.idx = S.words.length - 1;
@@ -424,14 +414,13 @@ function setPlayIcon(on) {
   $('#btn-play').setAttribute('aria-label', on ? 'Pause' : 'Play');
 }
 
-function play(resetRamp = true) {
+function play() {
   if (S.playing) return;
   if (S.starting) {
     S.starting = false;
     $('#tap-hint').classList.add('hidden');
   }
   S.playing = true;
-  if (resetRamp) S.rampCount = 0;
   setPlayIcon(true);
   schedule();
 }
@@ -601,8 +590,8 @@ function wire() {
   $('#btn-prev').addEventListener('click', () => jump(-1));
   $('#btn-next').addEventListener('click', () => jump(1));
 
-  $('#wpm-up').addEventListener('click', () => { S.wpm = Math.min(900, S.wpm + 25); S.rampCount = 0; updateWpm(); updateMeta(); saveProgress(); });
-  $('#wpm-dn').addEventListener('click', () => { S.wpm = Math.max(150, S.wpm - 25); S.rampCount = 0; updateWpm(); updateMeta(); saveProgress(); });
+  $('#wpm-up').addEventListener('click', () => { S.wpm = Math.min(900, S.wpm + 25); updateWpm(); updateMeta(); saveProgress(); });
+  $('#wpm-dn').addEventListener('click', () => { S.wpm = Math.max(150, S.wpm - 25); updateWpm(); updateMeta(); saveProgress(); });
 
   $('#btn-font-up').addEventListener('click', () => setZoom(0.12));
   $('#btn-font-dn').addEventListener('click', () => setZoom(-0.12));
@@ -637,7 +626,7 @@ function wire() {
     pressAt = 0;
     pressedWhilePlaying = false;
     if (wasPlaying) {
-      if (held >= HOLD_MS) play(false);   // held: carry on where we stopped
+      if (held >= HOLD_MS) play();        // held: carry on where we stopped
       return;                             // quick tap: stay paused
     }
     if (held < 600 && !e.target.closest('.w')) play();   // tap while paused
@@ -659,8 +648,8 @@ function wire() {
       case ' ': case 'k': e.preventDefault(); toggle(); break;
       case 'ArrowLeft': e.preventDefault(); jump(-1); break;
       case 'ArrowRight': e.preventDefault(); jump(1); break;
-      case 'ArrowUp': e.preventDefault(); S.wpm = Math.min(900, S.wpm + 25); S.rampCount = 0; updateWpm(); break;
-      case 'ArrowDown': e.preventDefault(); S.wpm = Math.max(150, S.wpm - 25); S.rampCount = 0; updateWpm(); break;
+      case 'ArrowUp': e.preventDefault(); S.wpm = Math.min(900, S.wpm + 25); updateWpm(); break;
+      case 'ArrowDown': e.preventDefault(); S.wpm = Math.max(150, S.wpm - 25); updateWpm(); break;
       case '1': case '2': case '3': {
         S.mode = ['rsvp', 'pacer', 'plain'][Number(e.key) - 1];
         applyMode(); break;
