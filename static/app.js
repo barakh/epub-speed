@@ -198,8 +198,11 @@ function measureWidth(text) {
 }
 
 const FLOW = new Map();   // word index -> row element
-const FLOW_AHEAD = 3;     // words queued below the reading line
-const FLOW_BEHIND = 3;    // words already read, rising and fading
+// One word occupies the line at a time: each new word replaces the last in
+// place, so nothing travels across the screen. Raise AHEAD/BEHIND to get the
+// scrolling queue back.
+const FLOW_AHEAD = 0;
+const FLOW_BEHIND = 0;
 
 function flowReset() {
   for (const row of FLOW.values()) row.remove();
@@ -275,7 +278,7 @@ function renderRsvp(instant) {
   const room = track.clientWidth * 0.84;
 
   for (const [i, row] of FLOW) {
-    if (i < lo - 1 || i > hi + 1) { row.remove(); FLOW.delete(i); }
+    if (i < lo || i > hi) { row.remove(); FLOW.delete(i); }
   }
   const fresh = new Set();
   for (let i = lo; i <= hi; i++) {

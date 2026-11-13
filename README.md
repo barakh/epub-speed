@@ -6,7 +6,7 @@ Three views of the same book, plus a position that is remembered:
 
 | view | what it does | good for |
 | --- | --- | --- |
-| **RSVP** | a column of words sliding upward, pivot letter pinned to the centre line, the next few words queued below | fiction, narrative nonfiction |
+| **RSVP** | one word at a time, replaced in place, pivot letter pinned to the centre line | fiction, narrative nonfiction |
 | **Pacer** | the whole page, read text dimmed, current word highlighted | dense text, arguments, numbers |
 | **Plain** | ordinary page | checking that extraction did not mangle the book |
 
@@ -65,9 +65,9 @@ At *n* wpm every word gets `60000 / n` ms, then:
 - a comma/colon adds 35 %, a full stop 90 %, an em dash 45 %
 - the last word of a paragraph adds 40 %
 
-The slide itself takes `min(110, 0.6 × delay)` ms, so faster speeds tighten the
-motion instead of dropping frames. Jumps (sentence, chapter, mode change) are
-instant.
+Words are swapped, never animated: the next word takes the previous one's spot.
+`FLOW_AHEAD` / `FLOW_BEHIND` in `static/app.js` turn the scrolling queue back on
+if you want to see words coming.
 
 The speed only changes when you change it. `−/+` (or ↑ ↓) move it by 25 wpm
 and the value is saved per book, so tomorrow starts where today stopped.
