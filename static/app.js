@@ -244,7 +244,18 @@ function makeRow(i) {
   const toPivot = measureWidth(left.textContent + pivot.textContent);
   const upToPivot = measureWidth(left.textContent);
   line.style.transform = `translateX(${-((toPivot + upToPivot) / 2)}px)`;
+  row._width = measureWidth(text);
   return row;
+}
+
+// Position a row on the line. Done before the row is ever in the document so a
+// fresh word is simply *there* at the bottom instead of sliding down to it.
+function placeRow(row, i, cur, rowH, room) {
+  const dy = (i - cur) * rowH - rowH / 2;
+  const k = row._width > room ? room / row._width : 1;
+  row.style.transformOrigin = '0 50%';
+  row.style.transform = `translateY(${dy.toFixed(2)}px) scale(${k.toFixed(3)})`;
+  row.dataset.state = i === cur ? 'cur' : i < cur ? 'past' : 'next';
 }
 
 function renderRsvp(instant) {
@@ -256,16 +267,6 @@ function renderRsvp(instant) {
   const rowH = flowRowHeight();
   const track = $('#rsvp-flow');
 
-  for (const [i, row] of FLOW) {
-    if (i < lo - 1 || i > hi + 1) { row.remove(); FLOW.delete(i); }
-  }
-  for (let i = lo; i <= hi; i++) {
-    if (FLOW.has(i)) continue;
-    const row = makeRow(i);
-    track.append(row);
-    FLOW.set(i, row);
-  }
-
   if (instant) {
     track.style.setProperty('--flow-dur', '0ms');
   } else {
@@ -274,14 +275,22 @@ function renderRsvp(instant) {
   }
 
   const room = track.clientWidth * 0.84;
+
   for (const [i, row] of FLOW) {
-    const dy = (i - cur) * rowH - rowH / 2;
-    // Long words shrink around their pivot instead of running off the screen.
-    const width = row.firstChild ? row.firstChild.offsetWidth : 0;
-    const k = width > room ? room / width : 1;
-    row.style.transformOrigin = '0 50%';
-    row.style.transform = `translateY(${dy.toFixed(2)}px) scale(${k.toFixed(3)})`;
-    row.dataset.state = i === cur ? 'cur' : i < cur ? 'past' : 'next';
+    if (i < lo - 1 || i > hi + 1) { row.remove(); FLOW.delete(i); }
+  }
+  const fresh = new Set();
+  for (let i = lo; i <= hi; i++) {
+    if (FLOW.has(i)) continue;
+    const row = makeRow(i);
+    placeRow(row, i, cur, rowH, room);   // styled before insertion: no animation
+    track.append(row);
+    FLOW.set(i, row);
+    fresh.add(row);
+  }
+  for (const [i, row] of FLOW) {
+    if (fresh.has(row)) continue;        // fresh rows never need to move
+    placeRow(row, i, cur, rowH, room);
   }
 }
 
