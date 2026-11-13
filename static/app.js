@@ -363,7 +363,7 @@ function delayFor(i) {
   const word = S.words[i];
   let d = 60000 / S.wpm;
   const len = text.length;
-  if (len > 7) d *= 1 + Math.min(0.55, (len - 7) * 0.028);
+  if (len > 5) d *= 1 + Math.min(0.95, (len - 5) * 0.06);   // long words linger
   if (/[,;:]\s*$/.test(text)) d *= 1.35;
   else if (/[.!?…]["'”’)\]]*$/.test(text)) d *= 1.9;
   else if (/[—–-]$/.test(text)) d *= 1.45;

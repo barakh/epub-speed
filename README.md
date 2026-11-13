@@ -61,7 +61,7 @@ Pacer: it switches mode, jumps there and dims everything before it.
 
 At *n* wpm every word gets `60000 / n` ms, then:
 
-- long words get up to +55 % (they take longer to recognise)
+- long words get +6 % per character past five, capped at +95 %
 - a comma/colon adds 35 %, a full stop 90 %, an em dash 45 %
 - the last word of a paragraph adds 40 %
 
